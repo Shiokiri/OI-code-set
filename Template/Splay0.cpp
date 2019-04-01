@@ -1,98 +1,107 @@
 #include <iostream>
 #include <cstdio>
+#include <cmath>
+#include <ctime>
 #include <cstdlib>
-#define ll long long
 
 using namespace std;
-const int N = 1000005, inf = 1e9;
-int n;
-int ch[N][2];
-int val[N],dat[N];
-int size[N],cnt[N];
-int tot,root;
-int New(int _val) {
-    val[++tot] = _val;
-    dat[tot] = rand();
-    size[tot] = 1;
-    cnt[tot] = 1;
-    return tot;
-}
-void pushup(int id) {
-    size[id] = size[ch[id][0]] + size[ch[id][1]] + cnt[id];
-}
-void build() {
-    root = New(-inf), ch[root][1] = New(inf);
-    pushup(root);
-}
-void Rotate(int &id, int d) {
-    int temp = ch[id][d ^ 1];
-    ch[id][d ^ 1] = ch[temp][d];
-    ch[temp][d] = id;
-    id = temp;
-    pushup(ch[id][d]), pushup(id);
-}
-void insert(int &id, int v) {
-    if(!id) { id = New(v); return; }
-    if(v == val[id]) cnt[id]++;
-    else {
-        int d = v < val[id] ? 0 : 1;
-        insert(ch[id][d], v);
-        if(dat[id] < dat[ch[id][d]]) Rotate(id, d ^ 1);
-    } pushup(id);
-}
-void Remove(int &id, int v) {
-    if(!id) return;
-    if(v == val[id]) {
-        if(cnt[id] > 1) { cnt[id]--; pushup(id); return; }
-        if(ch[id][0] || ch[id][1]) {
-            if(!ch[id][1] || dat[ch[id][0]] > dat[ch[id][1]])
-                Rotate(id, 1), Remove(ch[id][1], v);
-            else Rotate(id, 0), Remove(ch[id][0], v);
-            pushup(id);
-        } else id = 0; return;
-    }
-    v < val[id] ? Remove(ch[id][0], v) : Remove(ch[id][1], v);
-    pushup(id);
-}
-int get_rank(int id, int v) {
-    if(!id) return 0;
-    if(v == val[id]) return size[ch[id][0]] + 1;
-    else if(v < val[id]) return get_rank(ch[id][0], v);
-    else return size[ch[id][0]] + cnt[id] + get_rank(ch[id][1], v);
-}
-int get_val(int id, int rank) {
-    if(!id) return inf;
-    if(rank <= size[ch[id][0]]) return get_val(ch[id][0], rank);
-        else if(rank <= size[ch[id][0]] + cnt[id]) return val[id];
-    else return get_val(ch[id][1], rank - size[ch[id][0]] - cnt[id]);
-}
-int get_pre(int v) {
-    int id = root, pre;
-    while(id) {
-        if(val[id] < v) pre = val[id], id = ch[id][1];
-        else id = ch[id][0];
-    } return pre;
-}
-int get_next(int v) {
-    int id = root, nxt;
-    while(id) {
-        if(val[id] > v) nxt = val[id], id = ch[id][0];
-        else id = ch[id][1];
-    } return nxt;
-}
+const int N = 100005;
+const int inf = 0x7fffffff;
+int n, m;
+class Fhq_Treap
+{
+    private:
+        int ch[N][2]; //左/右儿子 
+        int val[N]; //权值 
+        int siz[N]; //子树大小 
+        int pri[N]; //随机权值
+        int root; // 根  
+        int point; //结点个数 
+        int x, y, z; //分裂树根 
+        int f[N]; //tag
+        
+        void update(int x)
+        {
+            siz[x] = siz[ch[x][0]] + siz[ch[x][1]] + 1;
+        }
+        void pushdown(int x)
+        {
+            swap(ch[x][0], ch[x][1]);
+            if(ch[x][0]) f[ch[x][0]] ^= 1;
+            if(ch[x][1]) f[ch[x][1]] ^= 1;
+            f[x] = 0;
+        }
+        
+        int New(int v)
+        {
+            siz[++point] = 1;
+            val[point] = v;
+            pri[point] = rand();
+            return point;
+        }
+        void split(int i, int k, int &x, int &y)
+        {
+            if(!i) { x = y = 0; return; }
+            if(f[i]) pushdown(i);
+            if(siz[ch[i][0]] < k)
+            {
+                x = i;
+                split(ch[i][1], k - siz[ch[i][0]] - 1, ch[i][1], y);
+            }
+            else
+            {
+                y = i;
+                split(ch[i][0], k, x, ch[i][0]);
+            }
+            update(i);
+        }
+        int merge(int x, int y)
+        {
+            if(!x || !y) return x + y;
+            if(pri[x] < pri[y])
+            {
+                if(f[x]) pushdown(x);
+                ch[x][1] = merge(ch[x][1], y);
+                update(x);
+                return x;
+            }
+            else
+            {
+                if(f[y]) pushdown(y);
+                ch[y][0] = merge(x, ch[y][0]);
+                update(y);
+                return y;
+            }
+        }
+        void Print(int i)
+        {
+            if(!i) return;
+            if(f[i]) pushdown(i);
+            Print(ch[i][0]);
+            printf("%d ", val[i]);
+            Print(ch[i][1]);
+        }
+    public:
+        void solve()
+        {
+            for(int i = 1; i <= n; i++)
+                root = merge(root, New(i));
+            for(int i = 1, l, r; i <= m; i++)
+            {
+                cin >> l >> r;
+                split(root, l - 1, x, y);
+                split(y, r - l + 1, y, z);
+                f[y] ^= 1;
+                root = merge(x, merge(y, z));
+            }
+            Print(root);
+        }
+};
+class Fhq_Treap treap;
+
 int main()
 {
-    build();
-    scanf("%d", &n);
-    for(int i = 1, op, x; i <= n; i++)
-    {
-        scanf("%d%d", &op, &x);
-        if(op == 1) insert(root, x);
-        else if(op == 2) Remove(root, x);
-        else if(op == 3) printf("%d\n", get_rank(root, x) - 1);
-        else if(op == 4) printf("%d\n", get_val(root, x + 1));
-        else if(op == 5) printf("%d\n", get_pre(x));
-        else if(op == 6) printf("%d\n", get_next(x));
-    }
+    cin >> n >> m;
+    treap.solve();
     return 0;
 }
