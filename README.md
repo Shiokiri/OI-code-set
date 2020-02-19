@@ -8,4 +8,4 @@ Language : C++
 
 - [x]  NOIP2017
 - [x]  NOIP2018
-- [ ]  CSP2019
+- [x]  CSP2019
